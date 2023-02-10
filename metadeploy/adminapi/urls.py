@@ -6,7 +6,6 @@ from .api import (
     PlanSlugViewSet,
     PlanTemplateViewSet,
     PlanViewSet,
-    ProductCategoryViewSet,
     ProductSlugViewSet,
     ProductViewSet,
     TranslationViewSet,
@@ -26,7 +25,6 @@ router.register(r"allowedlistorgs", AllowedListOrgViewSet)
 router.register(r"plans", PlanViewSet)
 router.register(r"plantemplates", PlanTemplateViewSet)
 router.register(r"planslug", PlanSlugViewSet)
-router.register(r"productcategory", ProductCategoryViewSet)
 router.register(r"products", ProductViewSet)
 router.register(r"productslug", ProductSlugViewSet)
 router.register(r"versions", VersionViewSet)

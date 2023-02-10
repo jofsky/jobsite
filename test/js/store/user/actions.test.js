@@ -70,7 +70,7 @@ describe('logout', () => {
 
   beforeEach(() => {
     store = storeWithApi({});
-    fetchMock.getOnce(window.api_urls.productcategory_list(), []);
+    fetchMock.getOnce(window.api_urls.product_list(), []);
     fetchMock.postOnce(window.api_urls.account_logout(), {
       status: 204,
       body: {},

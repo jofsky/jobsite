@@ -10,7 +10,6 @@ from ...models import (
     PlanSlug,
     PlanTemplate,
     Product,
-    ProductCategory,
     ProductSlug,
     Step,
     Version,
@@ -20,7 +19,10 @@ from ...models import (
 class Sleep(BaseTask):
     name = "Sleep"
     task_options = {
-        "seconds": {"description": "The number of seconds to sleep", "required": True}
+        "seconds": {
+            "description": "The number of seconds to sleep",
+            "required": True,
+        }
     }
 
     def _run_task(self):  # pragma: nocover
@@ -98,7 +100,9 @@ class Command(BaseCommand):
             **kwargs,
         )
 
-    def create_plan(self, version, title="Full Install", tier="primary", **kwargs):
+    def create_plan(
+        self, version, title="Full Install", tier="primary", **kwargs
+    ):
         plan_template = PlanTemplate.objects.create(
             name=f"{title} for {version}",
             preflight_message=(
@@ -125,11 +129,13 @@ class Command(BaseCommand):
         path = kwargs.pop("path", "quick_task")
         if fail:
             kwargs.setdefault(
-                "task_class", "metadeploy.api.management.commands.populate_data.Fail"
+                "task_class",
+                "metadeploy.api.management.commands.populate_data.Fail",
             )
         else:
             kwargs.setdefault(
-                "task_class", "metadeploy.api.management.commands.populate_data.Sleep"
+                "task_class",
+                "metadeploy.api.management.commands.populate_data.Sleep",
             )
             kwargs.setdefault("task_config", {"options": {"seconds": 3}})
         return Step.objects.create(path=path, **kwargs)
@@ -394,19 +400,9 @@ class Command(BaseCommand):
             Step.objects.create(plan=plan, **step)
 
     def handle(self, *args, **options):
-        sf_category = ProductCategory.objects.create(
-            title="Salesforce.org Products",
-            order_key=0,
-            description="Sample products from Salesforce.org. "
-            "**Descriptions support Markdown**.",
-        )
-        co_category = ProductCategory.objects.create(
-            title="Community Products", order_key=1
-        )
         product1 = self.create_product(
             title="Product With Useful Data",
             repo_url="https://github.com/SFDO-Tooling/CumulusCI-Test",
-            category=sf_category,
             order_key=0,
         )
         old_version = self.create_version(product1, "0.2.0")
@@ -456,7 +452,11 @@ class Command(BaseCommand):
             title="Plan-Level Failing Preflight",
             tier="additional",
             preflight_checks=[
-                {"when": "True", "action": "error", "message": "This plan is verboten."}
+                {
+                    "when": "True",
+                    "action": "error",
+                    "message": "This plan is verboten.",
+                }
             ],
         )
         self.add_steps(plan4)
@@ -478,7 +478,6 @@ class Command(BaseCommand):
         product2 = self.create_product(
             title="Red Salesforce Product",
             description="This product should have a red icon.",
-            category=sf_category,
             color="#c23934",
             order_key=1,
         )
@@ -496,18 +495,20 @@ class Command(BaseCommand):
         product3 = self.create_product(
             title="Custom Icon Salesforce Product",
             description="This product should have a custom icon.",
-            category=sf_category,
-            icon_url=("https://lightningdesignsystem.com/assets/images" "/avatar3.jpg"),
+            icon_url=(
+                "https://lightningdesignsystem.com/assets/images" "/avatar3.jpg"
+            ),
             order_key=2,
         )
         version3 = self.create_version(product3)
-        self.create_plan(version3, title="Restricted Plan", visible_to=allowed_list)
+        self.create_plan(
+            version3, title="Restricted Plan", visible_to=allowed_list
+        )
         self.create_plan(version3, title="Unrestricted Plan", tier="secondary")
 
         product4 = self.create_product(
             title="Custom SLDS Icon Salesforce Product",
             description="This product should have a custom SLDS icon.",
-            category=sf_category,
             slds_icon_category="utility",
             slds_icon_name="world",
             order_key=3,
@@ -518,9 +519,10 @@ class Command(BaseCommand):
 
         for i in range(30):
             product = self.create_product(
-                title=f"Sample Community Product {i}", category=co_category, order_key=i
+                title=f"Sample Community Product {i}",
+                order_key=i,
             )
             version = self.create_version(product)
             self.create_plan(version)
 
-        self.create_eda(category=sf_category)
+        self.create_eda()

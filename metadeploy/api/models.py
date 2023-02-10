@@ -20,7 +20,11 @@ from django.contrib.postgres.fields import ArrayField
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
-from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.core.validators import (
+    MaxValueValidator,
+    MinValueValidator,
+    RegexValidator,
+)
 from django.db import models
 from django.db.models import Count, F, Func, JSONField, Q
 from django.utils.translation import gettext_lazy as _
@@ -103,7 +107,10 @@ class AllowedListOrg(models.Model):
         help_text=("A description of the org for future reference",)
     )
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -185,7 +192,9 @@ class User(HashIdMixin, AbstractUser):
     def full_org_type(self):
         org_type = self._get_org_property("OrganizationType")
         is_sandbox = self._get_org_property("IsSandbox")
-        has_expiration = self._get_org_property("TrialExpirationDate") is not None
+        has_expiration = (
+            self._get_org_property("TrialExpirationDate") is not None
+        )
         if org_type is None or is_sandbox is None:
             return None
         if org_type == "Developer Edition" and not is_sandbox:
@@ -209,7 +218,10 @@ class User(HashIdMixin, AbstractUser):
         account = self.social_account
         if account and account.socialtoken_set.exists():
             token = self.social_account.socialtoken_set.first()
-            return (fernet_decrypt(token.token), fernet_decrypt(token.token_secret))
+            return (
+                fernet_decrypt(token.token),
+                fernet_decrypt(token.token_secret),
+            )
         return (None, None)
 
     @property
@@ -221,30 +233,6 @@ class User(HashIdMixin, AbstractUser):
         if all(self.token) and self.org_id:
             return self.org_id
         return None
-
-
-class ProductCategory(TranslatableModel):
-    class Meta:
-        verbose_name_plural = "product categories"
-        ordering = ("order_key",)
-
-    order_key = models.PositiveIntegerField(default=0)
-    is_listed = models.BooleanField(default=True)
-
-    translations = TranslatedFields(
-        title=models.CharField(max_length=256),
-        description=MarkdownField(),
-    )
-
-    @property
-    def description_markdown(self):
-        return self._get_translated_model(use_fallback=True).description_markdown
-
-    def __str__(self):
-        return self.title
-
-    def get_translation_strategy(self):
-        return "fields", f"{self.title}:product_category"
 
 
 class ProductSlug(AbstractSlug):
@@ -260,7 +248,9 @@ class ProductQuerySet(TranslatableQuerySet):
         )
 
 
-class Product(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel):
+class Product(
+    HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel
+):
     SLDS_ICON_CHOICES = (
         ("", ""),
         ("action", "action"),
@@ -271,7 +261,7 @@ class Product(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel)
     )
 
     class Meta:
-        ordering = ("category__order_key", "order_key")
+        ordering = ("order_key",)
 
     objects = ProductQuerySet.as_manager()
 
@@ -285,7 +275,9 @@ class Product(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel)
 
     @property
     def description_markdown(self):
-        return self._get_translated_model(use_fallback=True).description_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).description_markdown
 
     @property
     def click_through_agreement_markdown(self):
@@ -295,9 +287,10 @@ class Product(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel)
 
     @property
     def error_message_markdown(self):
-        return self._get_translated_model(use_fallback=True).error_message_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).error_message_markdown
 
-    category = models.ForeignKey(ProductCategory, on_delete=models.PROTECT)
     color = ColorField(blank=True)
     image = models.ImageField(blank=True)
     icon_url = models.URLField(
@@ -327,7 +320,11 @@ class Product(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel)
 
     @property
     def most_recent_version(self):
-        return self.version_set.exclude(is_listed=False).order_by("-created_at").first()
+        return (
+            self.version_set.exclude(is_listed=False)
+            .order_by("-created_at")
+            .first()
+        )
 
     @property
     def icon(self):
@@ -384,7 +381,9 @@ class Version(HashIdMixin, TranslatableModel):
     @property
     def primary_plan(self):
         return (
-            self.plan_set.filter(tier=Plan.Tier.primary).order_by("-created_at").first()
+            self.plan_set.filter(tier=Plan.Tier.primary)
+            .order_by("-created_at")
+            .first()
         )
 
     @property
@@ -447,7 +446,9 @@ class PlanTemplate(SlugMixin, TranslatableModel):
 
     @property
     def preflight_message_markdown(self):
-        return self._get_translated_model(use_fallback=True).preflight_message_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).preflight_message_markdown
 
     @property
     def post_install_message_markdown(self):
@@ -457,7 +458,9 @@ class PlanTemplate(SlugMixin, TranslatableModel):
 
     @property
     def error_message_markdown(self):
-        return self._get_translated_model(use_fallback=True).error_message_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).error_message_markdown
 
     def __str__(self):
         return f"{self.product.title}: {self.name}"
@@ -496,7 +499,9 @@ class Plan(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel):
         choices=SUPPORTED_ORG_TYPES,
         default=SUPPORTED_ORG_TYPES.Persistent,
     )
-    org_config_name = models.CharField(max_length=64, default="release", blank=True)
+    org_config_name = models.CharField(
+        max_length=64, default="release", blank=True
+    )
     scratch_org_duration_override = models.IntegerField(
         "Scratch Org duration (days)",
         null=True,
@@ -556,7 +561,10 @@ class Plan(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel):
 
     @property
     def scratch_org_duration(self):
-        return self.scratch_org_duration_override or settings.SCRATCH_ORG_DURATION_DAYS
+        return (
+            self.scratch_org_duration_override
+            or settings.SCRATCH_ORG_DURATION_DAYS
+        )
 
     def natural_key(self):
         return (self.version, self.title)
@@ -588,7 +596,10 @@ class Plan(HashIdMixin, SlugMixin, AllowedListAccessMixin, TranslatableModel):
         return super().is_visible_to(*args, **kwargs)
 
     def clean(self):
-        if self.visible_to and self.supported_orgs != SUPPORTED_ORG_TYPES.Persistent:
+        if (
+            self.visible_to
+            and self.supported_orgs != SUPPORTED_ORG_TYPES.Persistent
+        ):
             raise ValidationError(
                 {
                     "supported_orgs": _(
@@ -636,11 +647,15 @@ class Step(HashIdMixin, TranslatableModel):
     )
 
     translations = TranslatedFields(
-        name=models.CharField(max_length=1024, help_text="Customer facing label"),
+        name=models.CharField(
+            max_length=1024, help_text="Customer facing label"
+        ),
         description=models.TextField(blank=True),
     )
 
-    plan = models.ForeignKey(Plan, on_delete=models.CASCADE, related_name="steps")
+    plan = models.ForeignKey(
+        Plan, on_delete=models.CASCADE, related_name="steps"
+    )
     is_required = models.BooleanField(default=True)
     is_recommended = models.BooleanField(default=True)
     kind = models.CharField(choices=Kind, default=Kind.metadata, max_length=64)
@@ -653,7 +668,8 @@ class Step(HashIdMixin, TranslatableModel):
         validators=[RegexValidator(regex=STEP_NUM)],
     )
     task_class = models.CharField(
-        max_length=2048, help_text="dotted module path to BaseTask implementation"
+        max_length=2048,
+        help_text="dotted module path to BaseTask implementation",
     )
     task_config = JSONField(default=dict, blank=True)
     source = JSONField(blank=True, null=True)
@@ -710,7 +726,10 @@ class Job(HashIdMixin, models.Model):
     tracker = FieldTracker(fields=("results", "status"))
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
     steps = models.ManyToManyField(Step)
@@ -720,7 +739,9 @@ class Job(HashIdMixin, models.Model):
     edited_at = models.DateTimeField(auto_now=True)
     enqueued_at = models.DateTimeField(null=True)
     job_id = models.UUIDField(null=True)
-    status = models.CharField(choices=Status, max_length=64, default=Status.started)
+    status = models.CharField(
+        choices=Status, max_length=64, default=Status.started
+    )
     org_id = models.CharField(null=True, blank=True, max_length=18)
     org_type = models.CharField(blank=True, max_length=256)
     full_org_type = models.CharField(null=True, blank=True, max_length=256)
@@ -728,7 +749,9 @@ class Job(HashIdMixin, models.Model):
     success_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text=("If the job completed successfully, the time of that success."),
+        help_text=(
+            "If the job completed successfully, the time of that success."
+        ),
     )
     canceled_at = models.DateTimeField(
         null=True,
@@ -783,7 +806,8 @@ class Job(HashIdMixin, models.Model):
 
     def skip_steps(self):
         return [
-            step.step_num for step in set(self.plan.steps.all()) - set(self.steps.all())
+            step.step_num
+            for step in set(self.plan.steps.all()) - set(self.steps.all())
         ]
 
     def _push_if_condition(self, condition, fn):
@@ -800,7 +824,9 @@ class Job(HashIdMixin, models.Model):
         self._push_if_condition(results_has_changed, notify_post_task)
 
     def push_if_has_stopped_running(self, changed):
-        has_stopped_running = "status" in changed and self.status != Job.Status.started
+        has_stopped_running = (
+            "status" in changed and self.status != Job.Status.started
+        )
         self._push_if_condition(has_stopped_running, notify_post_job)
 
     def save(self, *args, **kwargs):
@@ -855,7 +881,10 @@ class Job(HashIdMixin, models.Model):
 
     def run(self, ctx, plan, steps, org):
         flow_coordinator = FlowCoordinator.from_steps(
-            ctx.project_config, steps, name="default", callbacks=JobFlowCallback(self)
+            ctx.project_config,
+            steps,
+            name="default",
+            callbacks=JobFlowCallback(self),
         )
         flow_coordinator.run(org)
 
@@ -864,7 +893,9 @@ class PreflightResultQuerySet(models.QuerySet):
     def most_recent(self, *, org_id, plan, is_valid_and_complete=True):
         kwargs = {"org_id": org_id, "plan": plan}
         if is_valid_and_complete:
-            kwargs.update({"is_valid": True, "status": PreflightResult.Status.complete})
+            kwargs.update(
+                {"is_valid": True, "status": PreflightResult.Status.complete}
+            )
         return self.filter(**kwargs).order_by("-created_at").first()
 
 
@@ -877,13 +908,18 @@ class PreflightResult(models.Model):
 
     org_id = models.CharField(null=True, blank=True, max_length=18)
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)
     is_valid = models.BooleanField(default=True)
-    status = models.CharField(choices=Status, max_length=64, default=Status.started)
+    status = models.CharField(
+        choices=Status, max_length=64, default=Status.started
+    )
     canceled_at = models.DateTimeField(
         null=True,
         help_text=(
@@ -920,7 +956,11 @@ class PreflightResult(models.Model):
 
     def has_any_errors(self):
         for results in self.results.values():
-            if any(result for result in results if result.get("status", None) == ERROR):
+            if any(
+                result
+                for result in results
+                if result.get("status", None) == ERROR
+            ):
                 return True
         return False
 
@@ -955,7 +995,8 @@ class PreflightResult(models.Model):
 
     def push_if_completed(self, changed):
         has_completed = (
-            "status" in changed and self.status == PreflightResult.Status.complete
+            "status" in changed
+            and self.status == PreflightResult.Status.complete
         )
         self._push_if_condition(has_completed, preflight_completed)
 
@@ -967,7 +1008,8 @@ class PreflightResult(models.Model):
 
     def push_if_canceled(self, changed):
         has_canceled = (
-            "status" in changed and self.status == PreflightResult.Status.canceled
+            "status" in changed
+            and self.status == PreflightResult.Status.canceled
         )
         self._push_if_condition(has_canceled, preflight_canceled)
 
@@ -1037,7 +1079,9 @@ class ScratchOrg(HashIdMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(choices=Status, max_length=64, default=Status.started)
+    status = models.CharField(
+        choices=Status, max_length=64, default=Status.started
+    )
     config = JSONField(null=True, blank=True, encoder=DjangoJSONEncoder)
     org_id = models.CharField(null=True, blank=True, max_length=18)
     expires_at = models.DateTimeField(null=True, blank=True)
@@ -1075,10 +1119,17 @@ class ScratchOrg(HashIdMixin, models.Model):
     def queue_delete(self, should_delete_locally=True):
         from .jobs import delete_scratch_org_job
 
-        delete_scratch_org_job.delay(self, should_delete_locally=should_delete_locally)
+        delete_scratch_org_job.delay(
+            self, should_delete_locally=should_delete_locally
+        )
 
     def delete(
-        self, *args, error=None, should_delete_on_sf=True, should_notify=True, **kwargs
+        self,
+        *args,
+        error=None,
+        should_delete_on_sf=True,
+        should_notify=True,
+        **kwargs,
     ):
         if should_notify:
             async_to_sync(notify_org_changed)(
@@ -1144,15 +1195,21 @@ class SiteProfile(TranslatableModel):
 
     @property
     def welcome_text_markdown(self):
-        return self._get_translated_model(use_fallback=True).welcome_text_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).welcome_text_markdown
 
     @property
     def master_agreement_markdown(self):
-        return self._get_translated_model(use_fallback=True).master_agreement_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).master_agreement_markdown
 
     @property
     def copyright_notice_markdown(self):
-        return self._get_translated_model(use_fallback=True).copyright_notice_markdown
+        return self._get_translated_model(
+            use_fallback=True
+        ).copyright_notice_markdown
 
     def __str__(self):
         return self.name

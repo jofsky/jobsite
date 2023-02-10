@@ -5,7 +5,6 @@ from ....models import (
     Plan,
     PlanSlug,
     Product,
-    ProductCategory,
     ProductSlug,
     Step,
     Version,
@@ -22,7 +21,6 @@ def test_truncate_data(product_factory, step_factory):
     step_factory(plan__version__product=p2)
     step_factory(plan__version__product=p3)
 
-    assert ProductCategory.objects.count() == 3
     assert ProductSlug.objects.count() == 3
     assert Product.objects.count() == 3
     assert Version.objects.count() == 3

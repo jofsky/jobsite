@@ -14,7 +14,6 @@ from ..serializers import (
     JobSummarySerializer,
     PlanSerializer,
     PreflightResultSerializer,
-    ProductCategorySerializer,
     ProductSerializer,
 )
 
@@ -80,7 +79,9 @@ class TestPlanSerializer:
         allowed_list = allowed_list_factory(description="Test.")
         product = product_factory(visible_to=allowed_list)
         plan_template = plan_template_factory(preflight_message="test")
-        plan = plan_factory(plan_template=plan_template, version__product=product)
+        plan = plan_factory(
+            plan_template=plan_template, version__product=product
+        )
         [step_factory(plan=plan) for _ in range(3)]
 
         request = rf.get("/")
@@ -98,21 +99,30 @@ class TestPlanSerializer:
         request = rf.get("/")
         request.user = user
         context = {"request": request}
-        data = {"title": plan.title, "supported_orgs": SUPPORTED_ORG_TYPES.Scratch}
+        data = {
+            "title": plan.title,
+            "supported_orgs": SUPPORTED_ORG_TYPES.Scratch,
+        }
         serializer = PlanSerializer(plan, data=data, context=context)
 
         assert serializer.is_valid(), serializer.errors
 
-    def test_update_bad(self, rf, user_factory, allowed_list_factory, plan_factory):
+    def test_update_bad(
+        self, rf, user_factory, allowed_list_factory, plan_factory
+    ):
         allowed_list = allowed_list_factory()
         user = user_factory()
         plan = plan_factory(
-            visible_to=allowed_list, supported_orgs=SUPPORTED_ORG_TYPES.Persistent
+            visible_to=allowed_list,
+            supported_orgs=SUPPORTED_ORG_TYPES.Persistent,
         )
         request = rf.get("/")
         request.user = user
         context = {"request": request}
-        data = {"title": plan.title, "supported_orgs": SUPPORTED_ORG_TYPES.Scratch}
+        data = {
+            "title": plan.title,
+            "supported_orgs": SUPPORTED_ORG_TYPES.Scratch,
+        }
         serializer = PlanSerializer(plan, data=data, context=context)
 
         assert not serializer.is_valid(), serializer.errors
@@ -214,7 +224,12 @@ class TestPreflightSerializer:
 @pytest.mark.django_db
 class TestJob:
     def test_create_good(
-        self, rf, user_factory, plan_factory, step_factory, preflight_result_factory
+        self,
+        rf,
+        user_factory,
+        plan_factory,
+        step_factory,
+        preflight_result_factory,
     ):
         plan = plan_factory()
         user = user_factory()
@@ -346,13 +361,19 @@ class TestJob:
         assert serializer.is_valid(), serializer.errors
 
     def test_create_bad_preflight(
-        self, rf, user_factory, plan_factory, step_factory, preflight_result_factory
+        self,
+        rf,
+        user_factory,
+        plan_factory,
+        step_factory,
+        preflight_result_factory,
     ):
         plan = plan_factory()
         user = user_factory()
         step1 = step_factory(plan=plan)
         step2 = step_factory(
-            plan=plan, task_config={"checks": [{"when": "True", "action": "error"}]}
+            plan=plan,
+            task_config={"checks": [{"when": "True", "action": "error"}]},
         )
         step3 = step_factory(plan=plan)
         request = rf.get("/")
@@ -373,7 +394,9 @@ class TestJob:
         assert not serializer.is_valid(), serializer.errors
 
     def test_create_bad_no_preflight(self, rf, user_factory, plan_factory):
-        plan = plan_factory(preflight_checks=[{"when": "True", "action": "error"}])
+        plan = plan_factory(
+            preflight_checks=[{"when": "True", "action": "error"}]
+        )
         user = user_factory()
         request = rf.get("/")
         request.user = user
@@ -383,7 +406,12 @@ class TestJob:
         assert not serializer.is_valid(), serializer.errors
 
     def test_invalid_steps(
-        self, rf, plan_factory, user_factory, step_factory, preflight_result_factory
+        self,
+        rf,
+        plan_factory,
+        user_factory,
+        step_factory,
+        preflight_result_factory,
     ):
         plan = plan_factory()
         user = user_factory()
@@ -405,7 +433,12 @@ class TestJob:
         assert not serializer.is_valid(), serializer.errors
 
     def test_invalid_steps_made_valid_by_preflight(
-        self, rf, plan_factory, user_factory, step_factory, preflight_result_factory
+        self,
+        rf,
+        plan_factory,
+        user_factory,
+        step_factory,
+        preflight_result_factory,
     ):
         plan = plan_factory()
         user = user_factory()
@@ -426,7 +459,9 @@ class TestJob:
 
         assert serializer.is_valid(), serializer.errors
 
-    def test_user_can_edit_scratch_org(self, rf, job_factory, scratch_org_factory):
+    def test_user_can_edit_scratch_org(
+        self, rf, job_factory, scratch_org_factory
+    ):
         org_id = "00Dxxxxxxxxxxxxxxx"
         uuid = str(uuid4())
         request = rf.get("/")
@@ -465,7 +500,10 @@ class TestJob:
         request.user = user
         job = job_factory(user=user, plan=plan, org_id=user.org_id)
         serializer = JobSerializer(
-            job, data={"is_public": False}, partial=True, context=dict(request=request)
+            job,
+            data={"is_public": False},
+            partial=True,
+            context=dict(request=request),
         )
 
         assert serializer.is_valid(), serializer.errors
@@ -608,7 +646,9 @@ class TestJob:
             in non_field_errors
         )
 
-    def test_invalid_results(self, rf, user_factory, plan_factory, step_factory):
+    def test_invalid_results(
+        self, rf, user_factory, plan_factory, step_factory
+    ):
         plan = plan_factory()
         user = user_factory()
         step1 = step_factory(plan=plan)
@@ -671,103 +711,3 @@ class TestJobSummarySerializer:
         job.refresh_from_db()
 
         assert JobSummarySerializer(job).data["plan_average_duration"] == 30
-
-
-@pytest.mark.django_db
-class TestProductCategorySerializer:
-    def test_get_first_page(self, rf, product_factory, version_factory, user_factory):
-        request = rf.get("")
-        request.query_params = {}
-        request.user = user_factory()
-        product1 = product_factory(is_listed=True, order_key=1)
-        version1 = version_factory(product=product1)
-        category = product1.category
-        product2 = product_factory(category=category, is_listed=True, order_key=0)
-        version2 = version_factory(product=product2)
-        serializer = ProductCategorySerializer(category, context={"request": request})
-        results = serializer.data["first_page"].pop("results")
-        assert serializer.data["first_page"] == {
-            "count": 2,
-            "previous": None,
-            "next": None,
-        }
-        expected = [
-            {
-                "id": str(product2.id),
-                "title": product2.title,
-                "description": "<p>This is a sample product.</p>",
-                "short_description": "",
-                "click_through_agreement": "",
-                "category": "salesforce",
-                "color": "#FFFFFF",
-                "icon": None,
-                "image": None,
-                "most_recent_version": {
-                    "id": str(version2.id),
-                    "product": str(product2.id),
-                    "label": str(version2.label),
-                    "description": "A sample version.",
-                    "created_at": format_timestamp(version2.created_at),
-                    "primary_plan": None,
-                    "secondary_plan": None,
-                    "is_listed": True,
-                },
-                "slug": product2.slug,
-                "old_slugs": [],
-                "is_allowed": True,
-                "is_listed": True,
-                "order_key": 0,
-                "not_allowed_instructions": None,
-                "layout": "Default",
-            },
-            {
-                "id": str(product1.id),
-                "title": product1.title,
-                "description": "<p>This is a sample product.</p>",
-                "short_description": "",
-                "click_through_agreement": "",
-                "category": "salesforce",
-                "color": "#FFFFFF",
-                "icon": None,
-                "image": None,
-                "most_recent_version": {
-                    "id": str(version1.id),
-                    "product": str(product1.id),
-                    "label": str(version1.label),
-                    "description": "A sample version.",
-                    "created_at": format_timestamp(version1.created_at),
-                    "primary_plan": None,
-                    "secondary_plan": None,
-                    "is_listed": True,
-                },
-                "slug": product1.slug,
-                "old_slugs": [],
-                "is_allowed": True,
-                "is_listed": True,
-                "order_key": 1,
-                "not_allowed_instructions": None,
-                "layout": "Default",
-            },
-        ]
-        assert results == expected
-
-    def test_get_first_page__paginated(
-        self, rf, product_factory, version_factory, user_factory
-    ):
-        request = rf.get("")
-        request.query_params = {}
-        request.user = user_factory()
-        product = product_factory()
-        version_factory(product=product)
-        category = product.category
-        for _ in range(30):
-            product = product_factory(category=category)
-            version_factory(product=product)
-        serializer = ProductCategorySerializer(category, context={"request": request})
-        # Too much trouble to compare this key:
-        serializer.data["first_page"].pop("results")
-        assert serializer.data["first_page"] == {
-            "count": 31,
-            "previous": None,
-            "next": f"http://testserver/api/products/?category={category.id}&page=2",
-        }

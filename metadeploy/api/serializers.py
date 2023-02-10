@@ -16,7 +16,6 @@ from .models import (
     Plan,
     PreflightResult,
     Product,
-    ProductCategory,
     ScratchOrg,
     SiteProfile,
     Step,
@@ -73,7 +72,9 @@ class ErrorWarningCountMixin:
 
 class CircumspectSerializerMixin:
     def circumspect_visible(self, obj, user):  # pragma: nocover
-        raise NotImplementedError("Subclasses must implement circumspect_visible")
+        raise NotImplementedError(
+            "Subclasses must implement circumspect_visible"
+        )
 
     def to_representation(self, instance):
         """
@@ -104,7 +105,9 @@ class CircumspectSerializerMixin:
             # For related fields with `use_pk_only_optimization` we need to
             # resolve the pk value.
             check_for_none = (
-                attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+                attribute.pk
+                if isinstance(attribute, PKOnlyObject)
+                else attribute
             )
             if check_for_none is None:
                 ret[field.field_name] = None
@@ -211,14 +214,18 @@ class PlanSerializer(CircumspectSerializerMixin, serializers.ModelSerializer):
         )
 
     def circumspect_visible(self, obj, user):
-        return obj.is_visible_to(user) and obj.version.product.is_visible_to(user)
+        return obj.is_visible_to(user) and obj.version.product.is_visible_to(
+            user
+        )
 
     def get_is_allowed(self, obj):
         return obj.is_visible_to(self.context["request"].user)
 
     def get_not_allowed_instructions(self, obj):
         if not obj.version.product.is_visible_to(self.context["request"].user):
-            return getattr(obj.version.product.visible_to, "description_markdown", None)
+            return getattr(
+                obj.version.product.visible_to, "description_markdown", None
+            )
         return getattr(obj.visible_to, "description_markdown", None)
 
     def get_requires_preflight(self, obj):
@@ -233,7 +240,9 @@ class PlanSerializer(CircumspectSerializerMixin, serializers.ModelSerializer):
         """
         Check that restricted plans only support persistent orgs.
         """
-        visible_to = get_from_data_or_instance(self.instance, data, "visible_to")
+        visible_to = get_from_data_or_instance(
+            self.instance, data, "visible_to"
+        )
         supported_orgs = get_from_data_or_instance(
             self.instance,
             data,
@@ -274,56 +283,10 @@ class VersionSerializer(serializers.ModelSerializer):
         )
 
 
-class ProductCategorySerializer(serializers.ModelSerializer):
-    description = serializers.CharField(source="description_markdown")
-    first_page = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ProductCategory
-        fields = ("id", "title", "description", "is_listed", "first_page")
-
-    def get_next_link(self, paginator, category_id):
-        if not paginator.page.has_next():
-            return None
-        path = reverse("product-list")
-        page_number = paginator.page.next_page_number()
-        url = paginator.request.build_absolute_uri(path)
-        url = replace_query_param(url, "category", category_id)
-        return replace_query_param(url, paginator.page_query_param, page_number)
-
-    def get_previous_link(self, paginator, category_id):
-        """
-        We expect this to always be None, because we know we're returning the first
-        page.
-        """
-        return None
-
-    def get_first_page(self, obj):
-        paginator = ProductPaginator()
-        qs = self._get_product_qs(obj)
-        page = paginator.paginate_queryset(qs, self.context["request"])
-        return {
-            "count": paginator.page.paginator.count,
-            "next": self.get_next_link(paginator, str(obj.id)),
-            "previous": self.get_previous_link(paginator, str(obj.id)),
-            "results": ProductSerializer(page, many=True, context=self.context).data,
-        }
-
-    def _get_product_qs(self, obj):
-        user = self.context["request"].user
-        qs = obj.product_set.published().exclude(is_listed=False)
-        if user.is_authenticated:
-            qs = qs.exclude(
-                visible_to__isnull=False,
-                visible_to__org_type__contains=[user.full_org_type],
-                visible_to__list_for_allowed_by_orgs=False,
-            )
-        return qs
-
-
-class ProductSerializer(CircumspectSerializerMixin, serializers.ModelSerializer):
+class ProductSerializer(
+    CircumspectSerializerMixin, serializers.ModelSerializer
+):
     id = serializers.CharField(read_only=True)
-    category = serializers.CharField(source="category.title")
     most_recent_version = VersionSerializer()
     is_allowed = serializers.SerializerMethodField()
     description = serializers.CharField(source="description_markdown")
@@ -522,14 +485,18 @@ class JobSerializer(ErrorWarningCountMixin, serializers.ModelSerializer):
         return not set(required_steps) - {s.id for s in steps}
 
     def _pending_job_exists(self, *, org_id):
-        return Job.objects.filter(status=Job.Status.started, org_id=org_id).first()
+        return Job.objects.filter(
+            status=Job.Status.started, org_id=org_id
+        ).first()
 
     def validate_plan(self, value):
         if not value.is_visible_to(self.context["request"].user):
             raise serializers.ValidationError(
                 _("You are not allowed to install this plan.")
             )
-        if not value.version.product.is_visible_to(self.context["request"].user):
+        if not value.version.product.is_visible_to(
+            self.context["request"].user
+        ):
             raise serializers.ValidationError(
                 _("You are not allowed to install this product.")
             )
@@ -543,13 +510,17 @@ class JobSerializer(ErrorWarningCountMixin, serializers.ModelSerializer):
             for step_id, results in data["results"].items():
                 # make sure results can't be set initially except to hide steps
                 if any(result["status"] != HIDE for result in results):
-                    raise serializers.ValidationError(_("Invalid initial results."))
+                    raise serializers.ValidationError(
+                        _("Invalid initial results.")
+                    )
 
     def validate(self, data):
         user = get_from_data_or_instance(self.instance, data, "user")
         org_id = getattr(self.instance, "org_id", getattr(user, "org_id", None))
         plan = get_from_data_or_instance(self.instance, data, "plan")
-        steps = get_from_data_or_instance(self.instance, data, "steps", default=[])
+        steps = get_from_data_or_instance(
+            self.instance, data, "steps", default=[]
+        )
 
         scratch_org = None
         if not (user and user.is_authenticated):
@@ -565,8 +536,9 @@ class JobSerializer(ErrorWarningCountMixin, serializers.ModelSerializer):
         most_recent_preflight = PreflightResult.objects.most_recent(
             org_id=org_id, plan=plan
         )
-        no_valid_preflight = not self.instance and not self._has_valid_preflight(
-            most_recent_preflight, plan=plan
+        no_valid_preflight = (
+            not self.instance
+            and not self._has_valid_preflight(most_recent_preflight, plan=plan)
         )
         if no_valid_preflight:
             raise serializers.ValidationError(_("No valid preflight."))
@@ -580,7 +552,9 @@ class JobSerializer(ErrorWarningCountMixin, serializers.ModelSerializer):
         if "results" in data:
             self._validate_results(data)
 
-        pending_job = not self.instance and self._pending_job_exists(org_id=org_id)
+        pending_job = not self.instance and self._pending_job_exists(
+            org_id=org_id
+        )
         if pending_job:
             raise serializers.ValidationError(
                 _(
@@ -602,13 +576,17 @@ class JobSerializer(ErrorWarningCountMixin, serializers.ModelSerializer):
             data["full_org_type"] = ORG_TYPES.Scratch
         if not user_has_valid_token:
             raise serializers.ValidationError(
-                _("The connection to your org has been lost. Please log in again.")
+                _(
+                    "The connection to your org has been lost. Please log in again."
+                )
             )
 
         return data
 
 
-class PreflightResultSerializer(ErrorWarningCountMixin, serializers.ModelSerializer):
+class PreflightResultSerializer(
+    ErrorWarningCountMixin, serializers.ModelSerializer
+):
     id = serializers.CharField(read_only=True)
     plan = IdOnlyField(read_only=True)
     user = IdOnlyField(read_only=True)

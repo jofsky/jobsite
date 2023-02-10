@@ -6,12 +6,11 @@ import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
 
-from metadeploy.api.models import Product, ProductCategory
+from metadeploy.api.models import Product
 
 
 @pytest.fixture
 def product():
-    category = ProductCategory.objects.create(title="Test Category", order_key=10)
 
     title = "Test Product Title"
     short_description = "Keep it short."
@@ -24,7 +23,6 @@ def product():
         description=description,
         click_through_agreement=click_through_agreement,
         error_message=error_message,
-        category=category,
     )
 
 

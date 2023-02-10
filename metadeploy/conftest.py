@@ -20,7 +20,6 @@ from metadeploy.api.models import (
     PlanTemplate,
     PreflightResult,
     Product,
-    ProductCategory,
     ProductSlug,
     ScratchOrg,
     SiteProfile,
@@ -126,21 +125,12 @@ class AllowedListOrgFactory(factory.django.DjangoModelFactory):
 
 
 @register
-class ProductCategoryFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = ProductCategory
-
-    title = "salesforce"
-
-
-@register
 class ProductFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Product
 
     title = factory.Sequence("Sample Product {}".format)
     description = "This is a sample product."
-    category = factory.SubFactory(ProductCategoryFactory)
     color = "#FFFFFF"
     icon_url = ""
     slds_icon_category = ""

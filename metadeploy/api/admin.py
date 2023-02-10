@@ -21,7 +21,6 @@ from .models import (
     PlanTemplate,
     PreflightResult,
     Product,
-    ProductCategory,
     ProductSlug,
     ScratchOrg,
     SiteProfile,
@@ -74,7 +73,9 @@ class AdminHelpTextMixin:
 
 
 class MetadeployTranslatableAdmin(TranslatableAdmin):
-    def get_language_tabs(self, request, obj, available_languages, css_class=None):
+    def get_language_tabs(
+        self, request, obj, available_languages, css_class=None
+    ):
         # Prevent showing other language tabs"""
         tabs = TabsList(css_class=css_class)
         current_language = self.get_form_language(request, obj)
@@ -87,7 +88,9 @@ class MetadeployTranslatableAdmin(TranslatableAdmin):
 class AllowedListAdmin(admin.ModelAdmin):
     list_display = ("title", "description")
     formfield_overrides = {
-        ArrayField: {"widget": ArrayFieldCheckboxSelectMultiple(choices=ORG_TYPES)}
+        ArrayField: {
+            "widget": ArrayFieldCheckboxSelectMultiple(choices=ORG_TYPES)
+        }
     }
 
 
@@ -123,7 +126,12 @@ class JobAdmin(AdminHelpTextMixin, admin.ModelAdmin, PlanMixin):
         "org_type",
         "enqueued_at",
     )
-    list_select_related = ("user", "plan", "plan__version", "plan__version__product")
+    list_select_related = (
+        "user",
+        "plan",
+        "plan__version",
+        "plan__version__product",
+    )
     search_fields = ("job_id", "org_id", "exception")
 
 
@@ -216,14 +224,6 @@ class PreflightResult(AdminHelpTextMixin, admin.ModelAdmin, PlanMixin):
 
 @admin.register(Product)
 class ProductAdmin(MetadeployTranslatableAdmin):
-    list_display = ("title", "category", "order_key", "is_listed")
-    list_editable = ("is_listed", "order_key")
-    list_filter = ("is_listed", "category")
-    search_fields = ("translations__title", "translations__description")
-
-
-@admin.register(ProductCategory)
-class ProductCategoryAdmin(MetadeployTranslatableAdmin):
     list_display = ("title", "order_key", "is_listed")
     list_editable = ("is_listed", "order_key")
     list_filter = ("is_listed",)
@@ -265,7 +265,13 @@ class UserAdmin(AdminHelpTextMixin, admin.ModelAdmin):
         "GDPR reminder: The username, name, and email are personally identifiable information. "
         "They must be used for support/debugging purposes only, and not exported from this system."
     )
-    list_display = ("username", "is_active", "is_staff", "is_superuser", "date_joined")
+    list_display = (
+        "username",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "date_joined",
+    )
     search_fields = ("username",)
 
 
@@ -273,7 +279,13 @@ class UserAdmin(AdminHelpTextMixin, admin.ModelAdmin):
 class VersionAdmin(admin.ModelAdmin):
     list_filter = ("product", "is_production", "is_listed")
     list_editable = ("is_production", "is_listed")
-    list_display = ("label", "product", "is_production", "is_listed", "commit_ish")
+    list_display = (
+        "label",
+        "product",
+        "is_production",
+        "is_listed",
+        "commit_ish",
+    )
     search_fields = ("label", "product")
 
 

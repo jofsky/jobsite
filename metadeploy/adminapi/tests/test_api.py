@@ -18,7 +18,6 @@ class TestProductViewSet:
         assert response.json() == {
             "data": [
                 {
-                    "category": f"{url}/productcategory/{product.category.id}",
                     "click_through_agreement": "",
                     "color": "#FFFFFF",
                     "description": "This is a sample product.",
@@ -131,7 +130,9 @@ class TestPlanViewSet:
             "scratch_org_duration_override": None,
         }
 
-    def test_create(self, admin_api_client, version_factory, plan_template_factory):
+    def test_create(
+        self, admin_api_client, version_factory, plan_template_factory
+    ):
         plan_template = plan_template_factory()
         version = version_factory()
         url = "http://testserver/admin/rest/plans"
@@ -294,7 +295,9 @@ class TestPlanViewSet:
         )
         assert response.status_code == 400
         assert response.json() == {
-            "version": ["You must not have more than one primary plan per version"]
+            "version": [
+                "You must not have more than one primary plan per version"
+            ]
         }
 
     def test_update_secondary(self, admin_api_client, plan_factory):
@@ -349,7 +352,9 @@ class TestPlanViewSet:
         )
         assert response.status_code == 400
         assert response.json() == {
-            "version": ["You must not have more than one secondary plan per version"]
+            "version": [
+                "You must not have more than one secondary plan per version"
+            ]
         }
 
     def test_ipaddress_restriction(self, user_factory, plan_factory):
@@ -363,10 +368,13 @@ class TestPlanViewSet:
 
         assert response.status_code == 400
 
-    def test_update_bad(self, admin_api_client, allowed_list_factory, plan_factory):
+    def test_update_bad(
+        self, admin_api_client, allowed_list_factory, plan_factory
+    ):
         allowed_list = allowed_list_factory()
         plan = plan_factory(
-            visible_to=allowed_list, supported_orgs=SUPPORTED_ORG_TYPES.Persistent
+            visible_to=allowed_list,
+            supported_orgs=SUPPORTED_ORG_TYPES.Persistent,
         )
 
         response = admin_api_client.put(

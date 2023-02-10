@@ -25,7 +25,6 @@ from .models import (
     Plan,
     PreflightResult,
     Product,
-    ProductCategory,
     ScratchOrg,
     SiteProfile,
     Version,
@@ -38,7 +37,6 @@ from .serializers import (
     OrgSerializer,
     PlanSerializer,
     PreflightResultSerializer,
-    ProductCategorySerializer,
     ProductSerializer,
     ScratchOrgSerializer,
     SiteSerializer,
@@ -63,7 +61,9 @@ class FilterAllowedByOrgMixin:
         if self.request.user.is_authenticated:
             qs = qs.exclude(
                 visible_to__isnull=False,
-                visible_to__org_type__contains=[self.request.user.full_org_type],
+                visible_to__org_type__contains=[
+                    self.request.user.full_org_type
+                ],
                 visible_to__list_for_allowed_by_orgs=False,
             )
         return qs
@@ -83,7 +83,9 @@ class GetOneMixin:
             InvalidFields,
         )
         # We want to include more items than the list view includes:
-        filter = self.filterset_class(request.GET, queryset=self.model.objects.all())
+        filter = self.filterset_class(
+            request.GET, queryset=self.model.objects.all()
+        )
         try:
             if filter.required_fields != request.GET.keys():
                 raise InvalidFields
@@ -152,11 +154,6 @@ class JobViewSet(
         cache.set(REDIS_JOB_CANCEL_KEY.format(id=instance.id), True)
 
 
-class ProductCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = ProductCategorySerializer
-    queryset = ProductCategory.objects.all()
-
-
 class ProductViewSet(
     FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelViewSet
 ):
@@ -192,7 +189,9 @@ class VersionViewSet(GetOneMixin, viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class PlanViewSet(FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelViewSet):
+class PlanViewSet(
+    FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelViewSet
+):
     serializer_class = PlanSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = PlanFilter
@@ -264,7 +263,9 @@ class PlanViewSet(FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelVi
         serializer = PreflightResultSerializer(instance=preflight_result)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["post", "get"], permission_classes=(AllowAny,))
+    @action(
+        detail=True, methods=["post", "get"], permission_classes=(AllowAny,)
+    )
     def preflight(self, request, pk=None):
         if request.method == "GET":
             return self.preflight_get(request)
@@ -293,7 +294,9 @@ class PlanViewSet(FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelVi
         )
         if not valid_plan_type:
             return Response(
-                {"detail": "This plan does not support creating a scratch org."},
+                {
+                    "detail": "This plan does not support creating a scratch org."
+                },
                 status=status.HTTP_409_CONFLICT,
             )
 
@@ -301,7 +304,9 @@ class PlanViewSet(FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelVi
         new_data["plan"] = str(plan.pk)
         serializer = ScratchOrgSerializer(data=new_data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check queue status
         # If overfull, return 503
@@ -321,7 +326,9 @@ class PlanViewSet(FilterAllowedByOrgMixin, GetOneMixin, viewsets.ReadOnlyModelVi
             status=status.HTTP_202_ACCEPTED,
         )
 
-    @action(detail=True, methods=["post", "get"], permission_classes=(AllowAny,))
+    @action(
+        detail=True, methods=["post", "get"], permission_classes=(AllowAny,)
+    )
     def scratch_org(self, request, pk=None):
         if request.method == "GET":
             return self.scratch_org_get(request)

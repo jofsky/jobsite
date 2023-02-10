@@ -9,7 +9,6 @@ from ...models import (
     PlanTemplate,
     PreflightResult,
     Product,
-    ProductCategory,
     ProductSlug,
     Step,
     Version,
@@ -30,7 +29,6 @@ class Command(BaseCommand):
             Version,
             ProductSlug,
             Product,
-            ProductCategory,
             AllowedListOrg,
             AllowedList,
         ]

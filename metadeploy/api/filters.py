@@ -27,6 +27,6 @@ class ProductFilter(filters.FilterSet):
 
     class Meta:
         model = Product
-        fields = ("slug", "category")
+        fields = ("slug",)
 
     required_fields = {"slug"}
